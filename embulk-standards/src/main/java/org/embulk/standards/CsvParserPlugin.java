@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.embulk.config.Task;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
@@ -230,6 +231,7 @@ public class CsvParserPlugin
     @Override
     public void transaction(ConfigSource config, ParserPlugin.Control control)
     {
+        log.info(">> transaction()");
         PluginTask task = config.loadConfig(PluginTask.class);
 
         // backward compatibility
@@ -245,12 +247,25 @@ public class CsvParserPlugin
         }
 
         control.run(task.dump(), task.getSchemaConfig().toSchema());
+        log.info("<< transaction()");
     }
 
+    private static AtomicInteger oddCount = new AtomicInteger(0);
     @Override
     public void run(TaskSource taskSource, final Schema schema,
             FileInput input, PageOutput output)
     {
+        log.info(">> run()");
+        int count = oddCount.incrementAndGet();
+        if (count % 2 == 0) {
+            try {
+                log.info("Sleep on " + Thread.currentThread().getName());
+                Thread.sleep(5000);
+                log.info("Waked up on " + Thread.currentThread().getName());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         PluginTask task = taskSource.loadTask(PluginTask.class);
         final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
         final JsonParser jsonParser = new JsonParser();
@@ -403,6 +418,7 @@ public class CsvParserPlugin
 
             pageBuilder.finish();
         }
+        log.info("<< run()");
     }
 
     static class CsvRecordValidateException

@@ -65,6 +65,7 @@ public class LocalFileInputPlugin
     @Override
     public ConfigDiff transaction(ConfigSource config, FileInputPlugin.Control control)
     {
+        log.info(">> transaction()");
         PluginTask task = config.loadConfig(PluginTask.class);
 
         // list files recursively
@@ -74,7 +75,9 @@ public class LocalFileInputPlugin
 
         // number of processors is same with number of files
         int taskCount = task.getFiles().size();
-        return resume(task.dump(), taskCount, control);
+        ConfigDiff ret = resume(task.dump(), taskCount, control);
+        log.info("<< transaction()");
+        return ret;
     }
 
     @Override
@@ -82,6 +85,7 @@ public class LocalFileInputPlugin
             int taskCount,
             FileInputPlugin.Control control)
     {
+        log.info(">> resume()");
         PluginTask task = taskSource.loadTask(PluginTask.class);
 
         control.run(taskSource, taskCount);
@@ -101,6 +105,7 @@ public class LocalFileInputPlugin
             configDiff.set("last_path", files.get(files.size() - 1));
         }
 
+        log.info("<< resume()");
         return configDiff;
     }
 

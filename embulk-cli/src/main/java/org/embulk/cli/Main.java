@@ -3,6 +3,7 @@ package org.embulk.cli;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.embulk.EmbulkVersion;
+import org.embulk.lens.Repl;
 
 public class Main
 {
@@ -24,8 +25,17 @@ public class Main
             embulkArgs.add(args[i]);
         }
 
+        new Repl().start();
+
         final EmbulkRun run = new EmbulkRun(EmbulkVersion.VERSION);
         final int error = run.run(Collections.unmodifiableList(embulkArgs), Collections.unmodifiableList(jrubyOptions));
+
+        try {
+            Thread.currentThread().join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         System.exit(error);
     }
 }

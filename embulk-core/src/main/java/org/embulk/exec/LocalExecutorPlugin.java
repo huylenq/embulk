@@ -1,42 +1,45 @@
 package org.embulk.exec;
 
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ExecutionException;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.slf4j.Logger;
 import com.google.inject.Inject;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.TaskSource;
 import org.embulk.config.TaskReport;
+import org.embulk.config.TaskSource;
+import org.embulk.lens.Tracker;
+import org.embulk.plugin.compat.PluginWrappers;
+import org.embulk.spi.AbortTransactionResource;
+import org.embulk.spi.CloseResource;
 import org.embulk.spi.Exec;
 import org.embulk.spi.ExecSession;
 import org.embulk.spi.ExecutorPlugin;
-import org.embulk.spi.ProcessTask;
-import org.embulk.spi.ProcessState;
-import org.embulk.spi.Schema;
-import org.embulk.spi.InputPlugin;
 import org.embulk.spi.FilterPlugin;
+import org.embulk.spi.InputPlugin;
 import org.embulk.spi.OutputPlugin;
 import org.embulk.spi.Page;
 import org.embulk.spi.PageOutput;
-import org.embulk.spi.AbortTransactionResource;
-import org.embulk.spi.CloseResource;
+import org.embulk.spi.ProcessState;
+import org.embulk.spi.ProcessTask;
+import org.embulk.spi.Schema;
 import org.embulk.spi.TransactionalPageOutput;
-import org.embulk.plugin.compat.PluginWrappers;
-import org.embulk.spi.util.Filters;
 import org.embulk.spi.util.Executors;
 import org.embulk.spi.util.Executors.ProcessStateCallback;
+import org.embulk.spi.util.Filters;
+import org.slf4j.Logger;
 
 public class LocalExecutorPlugin
         implements ExecutorPlugin
 {
     private int defaultMaxThreads;
     private int defaultMinThreads;
+
+    private static final Logger log = Exec.getLogger(LocalExecutorPlugin.class);
 
     @Inject
     public LocalExecutorPlugin(@ForSystemConfig ConfigSource systemConfig)
@@ -50,9 +53,13 @@ public class LocalExecutorPlugin
     public void transaction(ConfigSource config, Schema outputSchema, int inputTaskCount,
             ExecutorPlugin.Control control)
     {
+        Tracker.instance().captureIn("LocalExecutorPlugin", "transaction");
+        log.info(">> transaction()");
         try (AbstractLocalExecutor exec = newExecutor(config, inputTaskCount)) {
             control.transaction(outputSchema, exec.getOutputTaskCount(), exec);
         }
+        log.info("<< transaction()");
+        Tracker.instance().captureOut("LocalExecutorPlugin", "transaction");
     }
 
     private AbstractLocalExecutor newExecutor(ConfigSource config, int inputTaskCount)
@@ -245,6 +252,7 @@ public class LocalExecutorPlugin
         @Override
         protected Future<Throwable> startInputTask(final ProcessTask task, final ProcessState state, final int taskIndex)
         {
+            log.info(">> startInputTask()");
             if(isAllScatterOutputFinished(state, taskIndex)) {
                 log.warn("Skipped resumed input task {}", taskIndex);
                 return null;  // resumed
@@ -255,6 +263,7 @@ public class LocalExecutorPlugin
                 {
                     try (SetCurrentThreadName dontCare = new SetCurrentThreadName(String.format("task-%04d", taskIndex))) {
                         runInputTask(Exec.session(), task, state, taskIndex);
+                        log.info("$<< startInputTask()");
                         return null;
                     }
                 }
@@ -467,6 +476,7 @@ public class LocalExecutorPlugin
 
         public void startWorkers(ExecutorService outputExecutor)
         {
+            log.info("-- startWorkers() > " + scatterCount);
             for (int i = 0; i < scatterCount; i++) {
                 PageOutput filtered = filtereds[i];
                 if (filtered != null) {
@@ -477,6 +487,7 @@ public class LocalExecutorPlugin
 
         public void add(Page page)
         {
+            log.info("-- add()");
             OutputWorker worker = outputWorkers[(int) (pageCount % scatterCount)];
             if (worker != null) {
                 try {

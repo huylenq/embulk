@@ -107,6 +107,7 @@ public class BulkLoader
 
         public void setTransactionStage(TransactionStage transactionStage)
         {
+            logger.info("=> " + transactionStage);
             this.transactionStage = transactionStage;
         }
 
