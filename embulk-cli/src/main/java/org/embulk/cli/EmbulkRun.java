@@ -21,6 +21,7 @@ import org.embulk.cli.parse.EmbulkCommandLineParser;
 import org.embulk.cli.parse.OptionBehavior;
 import org.embulk.cli.parse.OptionDefinition;
 // TODO: Replace org.joda.time with java.time when Embulk goes to Java 8.
+import org.embulk.spik.Repl;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -97,6 +98,7 @@ public class EmbulkRun
                 parser.printHelp(System.err);
                 return 1;
             }
+            Repl.capture(commandLine);
             return runSubcommand(subcommand, subcommandArguments, commandLine, jrubyOptions);
         }
     }
@@ -161,6 +163,14 @@ public class EmbulkRun
                 // op.on('-c', '--config-diff PATH', 'Path to a file to read & write the next configuration diff') do |path|
                 //   options[:next_config_diff_path] = path
                 // end
+                .addOptionDefinition(OptionDefinition.defineOptionWithArgument(
+                        "clj", "clojure", "PATH", "Path to clojure file",
+                new OptionBehavior() {
+                    @Override
+                    public void behave(EmbulkCommandLine.Builder commandLineBuilder, String argument) throws EmbulkCommandLineParseException {
+
+                    }
+                }))
                 .addOptionDefinition(OptionDefinition.defineOptionWithArgument(
                     "c", "config-diff", "PATH", "Path to a file to read & write the next configuration diff",
                     new OptionBehavior()

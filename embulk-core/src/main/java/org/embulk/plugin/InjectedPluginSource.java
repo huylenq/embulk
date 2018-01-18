@@ -13,6 +13,7 @@ import org.embulk.spi.FileInputRunner;
 import org.embulk.spi.OutputPlugin;
 import org.embulk.spi.FileOutputPlugin;
 import org.embulk.spi.FileOutputRunner;
+import org.embulk.spik.Tracker;
 
 /**
  * InjectedPluginSource loads plugins bound by Guice.
@@ -57,6 +58,18 @@ public class InjectedPluginSource
         } catch (com.google.inject.ConfigurationException ex) {
             throw new PluginSourceNotMatchException();
         }
+    }
+
+    public static <T> void registerPluginToInstance(Binder binder, Class<T> iface, String name, final Object instance) {
+        PluginFactory<T> factory;
+        factory = new PluginFactory<T>() {
+            @SuppressWarnings("unchecked")
+            public T newPlugin(Injector injector)
+            {
+                return (T) instance;
+            }
+        };
+        binder.bind(PluginFactory.class).annotatedWith(pluginFactoryName(iface, name)).toInstance(factory);
     }
 
     public static <T> void registerPluginTo(Binder binder, Class<T> iface, String name, final Class<?> impl)

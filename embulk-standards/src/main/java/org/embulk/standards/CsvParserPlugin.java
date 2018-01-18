@@ -1,31 +1,30 @@
 package org.embulk.standards;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.embulk.config.Task;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
-import org.embulk.config.ConfigSource;
 import org.embulk.config.ConfigException;
+import org.embulk.config.ConfigSource;
+import org.embulk.config.Task;
 import org.embulk.config.TaskSource;
-import org.embulk.spi.time.TimestampParser;
-import org.embulk.spi.time.TimestampParseException;
-import org.embulk.spi.json.JsonParser;
-import org.embulk.spi.json.JsonParseException;
 import org.embulk.spi.Column;
-import org.embulk.spi.Schema;
-import org.embulk.spi.SchemaConfig;
 import org.embulk.spi.ColumnVisitor;
-import org.embulk.spi.PageBuilder;
-import org.embulk.spi.ParserPlugin;
+import org.embulk.spi.DataException;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileInput;
+import org.embulk.spi.PageBuilder;
 import org.embulk.spi.PageOutput;
-import org.embulk.spi.DataException;
+import org.embulk.spi.ParserPlugin;
+import org.embulk.spi.Schema;
+import org.embulk.spi.SchemaConfig;
+import org.embulk.spi.json.JsonParseException;
+import org.embulk.spi.json.JsonParser;
+import org.embulk.spi.time.TimestampParseException;
+import org.embulk.spi.time.TimestampParser;
 import org.embulk.spi.util.LineDecoder;
 import org.embulk.spi.util.Timestamps;
 import org.slf4j.Logger;
@@ -250,22 +249,22 @@ public class CsvParserPlugin
         log.info("<< transaction()");
     }
 
-    private static AtomicInteger oddCount = new AtomicInteger(0);
+//    private static AtomicInteger oddCount = new AtomicInteger(0);
     @Override
     public void run(TaskSource taskSource, final Schema schema,
             FileInput input, PageOutput output)
     {
         log.info(">> run()");
-        int count = oddCount.incrementAndGet();
-        if (count % 2 == 0) {
-            try {
-                log.info("Sleep on " + Thread.currentThread().getName());
-                Thread.sleep(5000);
-                log.info("Waked up on " + Thread.currentThread().getName());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+//        int count = oddCount.incrementAndGet();
+//        if (count % 2 == 0) {
+//            try {
+//                log.info("Sleep on " + Thread.currentThread().getName());
+//                Thread.sleep(5000);
+//                log.info("Waked up on " + Thread.currentThread().getName());
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        }
         PluginTask task = taskSource.loadTask(PluginTask.class);
         final TimestampParser[] timestampParsers = Timestamps.newTimestampColumnParsers(task, task.getSchemaConfig());
         final JsonParser jsonParser = new JsonParser();

@@ -1,27 +1,29 @@
 package org.embulk.spi;
 
+import static org.embulk.exec.GuessExecutor.createSampleBufferConfigFromExecConfig;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.embulk.config.Task;
-import org.embulk.config.TaskSource;
-import org.embulk.config.ConfigSource;
-import org.embulk.config.ConfigDiff;
-import org.embulk.config.TaskReport;
 import org.embulk.config.Config;
 import org.embulk.config.ConfigDefault;
+import org.embulk.config.ConfigDiff;
+import org.embulk.config.ConfigSource;
+import org.embulk.config.Task;
+import org.embulk.config.TaskReport;
+import org.embulk.config.TaskSource;
+import org.embulk.exec.ConfigurableGuessInputPlugin;
+import org.embulk.exec.GuessExecutor;
+import org.embulk.exec.SamplingParserPlugin;
 import org.embulk.plugin.PluginType;
 import org.embulk.plugin.compat.PluginWrappers;
 import org.embulk.spi.util.Decoders;
-import org.embulk.exec.GuessExecutor;
-import org.embulk.exec.SamplingParserPlugin;
-import org.embulk.exec.ConfigurableGuessInputPlugin;
-import org.embulk.exec.NoSampleException;
-
-import static org.embulk.exec.GuessExecutor.createSampleBufferConfigFromExecConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FileInputRunner
         implements InputPlugin, ConfigurableGuessInputPlugin
 {
+    private static final Logger log = LoggerFactory.getLogger(FileInputRunner.class);
     private final FileInputPlugin fileInputPlugin;
 
     public FileInputRunner(FileInputPlugin fileInputPlugin)
@@ -63,8 +65,12 @@ public class FileInputRunner
     @Override
     public ConfigDiff transaction(ConfigSource config, final InputPlugin.Control control)
     {
+        log.info(">> transaction()");
         final RunnerTask task = config.loadConfig(RunnerTask.class);
-        return fileInputPlugin.transaction(config, new RunnerControl(task, control));
+        ConfigDiff ret = fileInputPlugin
+            .transaction(config, new RunnerControl(task, control));
+        log.info("<< transaction()");
+        return ret;
     }
 
     @Override
@@ -72,8 +78,12 @@ public class FileInputRunner
             Schema schema, int taskCount,
             InputPlugin.Control control)
     {
+        log.info(">> resume()");
         final RunnerTask task = taskSource.loadTask(RunnerTask.class);
-        return fileInputPlugin.resume(task.getFileInputTaskSource(), taskCount, new RunnerControl(task, control));
+        ConfigDiff ret = fileInputPlugin
+            .resume(task.getFileInputTaskSource(), taskCount, new RunnerControl(task, control));
+        log.info("<< resume()");
+        return ret;
     }
 
     @Override
@@ -113,6 +123,7 @@ public class FileInputRunner
         @Override
         public List<TaskReport> run(final TaskSource fileInputTaskSource, final int taskCount)
         {
+            log.info(">> run()");
             final List<TaskReport> taskReports = new ArrayList<TaskReport>();
             Decoders.transaction(decoderPlugins, task.getDecoderConfigs(), new Decoders.Control() {
                 public void run(final List<TaskSource> decoderTaskSources)
@@ -128,6 +139,7 @@ public class FileInputRunner
                     });
                 }
             });
+            log.info("<< run()");
             return taskReports;
         }
     }

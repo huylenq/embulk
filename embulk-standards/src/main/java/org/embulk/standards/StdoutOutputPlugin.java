@@ -62,7 +62,7 @@ public class StdoutOutputPlugin
     public TransactionalPageOutput open(TaskSource taskSource, final Schema schema,
             int taskIndex/**/)
     {
-        log.info(">> open()");
+//        log.info(">> open");
         final PluginTask task = taskSource.loadTask(PluginTask.class);
 
         TransactionalPageOutput ret = new TransactionalPageOutput() {
@@ -70,10 +70,12 @@ public class StdoutOutputPlugin
             private final PagePrinter printer = new PagePrinter(schema, task.getTimeZone());
 
             public void add(Page page) {
+              log.info(">> TransactionalPageOutput.addPage()");
                 reader.setPage(page);
                 while (reader.nextRecord()) {
                     System.out.println(printer.printRecord(reader, ","));
                 }
+                log.info("<< TransactionalPageOutput.addPage()");
             }
 
             public void finish() {
@@ -91,7 +93,7 @@ public class StdoutOutputPlugin
                 return Exec.newTaskReport();
             }
         };
-        log.info(">> open()");
+//        log.info("<< open");
         return ret;
     }
 }

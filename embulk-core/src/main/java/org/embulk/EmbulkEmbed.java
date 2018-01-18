@@ -3,10 +3,13 @@ package org.embulk;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import clojure.lang.PersistentList;
 import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +29,9 @@ import org.embulk.spi.BufferAllocator;
 import org.embulk.spi.ExecSession;
 import org.embulk.guice.Bootstrap;
 import org.embulk.guice.LifeCycleInjector;
+import org.embulk.spik.Repl;
+import org.embulk.spik.Tracker;
+
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -102,6 +108,10 @@ public class EmbulkEmbed
                 .requireExplicitBindings(false)
                 .addModules(EmbulkService.standardModuleList(systemConfig));
 
+            if (Tracker.instance().spikModule() != null) {
+                bootstrap.addModules((Module) Tracker.instance().spikModule());
+            }
+
             for (Function<? super List<Module>, ? extends Iterable<? extends Module>> override : moduleOverrides) {
                 bootstrap = bootstrap.overrideModules(override);
             }
@@ -113,7 +123,9 @@ public class EmbulkEmbed
                 injector = bootstrap.initializeCloseable();
             }
 
-            return new EmbulkEmbed(systemConfig, injector);
+            EmbulkEmbed embed = new EmbulkEmbed(systemConfig, injector);
+            Repl.capture(embed);
+            return embed;
         }
     }
 

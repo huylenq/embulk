@@ -12,7 +12,6 @@ import java.util.concurrent.Future;
 import org.embulk.config.ConfigSource;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
-import org.embulk.lens.Tracker;
 import org.embulk.plugin.compat.PluginWrappers;
 import org.embulk.spi.AbortTransactionResource;
 import org.embulk.spi.CloseResource;
@@ -53,13 +52,11 @@ public class LocalExecutorPlugin
     public void transaction(ConfigSource config, Schema outputSchema, int inputTaskCount,
             ExecutorPlugin.Control control)
     {
-        Tracker.instance().captureIn("LocalExecutorPlugin", "transaction");
         log.info(">> transaction()");
         try (AbstractLocalExecutor exec = newExecutor(config, inputTaskCount)) {
             control.transaction(outputSchema, exec.getOutputTaskCount(), exec);
         }
         log.info("<< transaction()");
-        Tracker.instance().captureOut("LocalExecutorPlugin", "transaction");
     }
 
     private AbstractLocalExecutor newExecutor(ConfigSource config, int inputTaskCount)
@@ -229,6 +226,7 @@ public class LocalExecutorPlugin
             super(inputTaskCount, inputTaskCount * scatterCount);
             this.inputTaskCount = inputTaskCount;
             this.scatterCount = scatterCount;
+
             this.inputExecutor = java.util.concurrent.Executors.newFixedThreadPool(
                     Math.max(maxThreads / scatterCount, 1),
                     new ThreadFactoryBuilder()
@@ -434,6 +432,8 @@ public class LocalExecutorPlugin
 
         private long pageCount;
 
+        private static Logger log = Exec.getLogger(ScatterTransactionalPageOutput.class);
+
         public ScatterTransactionalPageOutput(ProcessState state, int taskIndex, int scatterCount)
         {
             this.state = state;
@@ -487,7 +487,7 @@ public class LocalExecutorPlugin
 
         public void add(Page page)
         {
-            log.info("-- add()");
+//            log.info("-- add()");
             OutputWorker worker = outputWorkers[(int) (pageCount % scatterCount)];
             if (worker != null) {
                 try {
@@ -530,6 +530,7 @@ public class LocalExecutorPlugin
 
         public TaskReport commit()
         {
+            log.info(">> commit()");
             completeWorkers();
             for (int i = 0; i < scatterCount; i++) {
                 if (trans[i] != null) {
@@ -542,6 +543,7 @@ public class LocalExecutorPlugin
                     state.getOutputTaskState(outputTaskIndex).setTaskReport(outputTaskReport);
                 }
             }
+            log.info("<< commit()");
             return null;
         }
 
